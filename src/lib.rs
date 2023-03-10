@@ -16,7 +16,7 @@ use json::{
 };
 use registry::ModuleRegistry;
 
-use wasmparser::ValType;
+use wasmparser::{ValType, WasmFeatures};
 use wast::{
     core::{HeapType, WastArgCore, WastRetCore},
     parser::{self, ParseBuffer},
@@ -24,12 +24,22 @@ use wast::{
     QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat,
 };
 
-#[derive(Default)]
-pub struct Wast2JsonOptions {}
+#[derive(Debug)]
+pub struct Wast2JsonOptions {
+    pub features: WasmFeatures,
+    pub validate: bool,
+}
+
+impl Default for Wast2JsonOptions {
+    fn default() -> Self {
+        Self {
+            features: Default::default(),
+            validate: true,
+        }
+    }
+}
 
 impl WastJsonScript {
-    pub fn to_string() {}
-
     pub fn write<W: Write>(&self, writer: W) -> Result<()> {
         self.write_formatted(writer, WabtFormatter::new())
     }
@@ -94,7 +104,7 @@ struct Wast2JsonConverter<'a, M: WriteModuleFile> {
     module_basename: &'a str,
     module_files: &'a mut M,
     counter: u32,
-    registry: ModuleRegistry,
+    registry: ModuleRegistry<'a>,
 }
 
 #[derive(Clone)]
@@ -116,7 +126,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
         text: &'a str,
         module_basename: &'a str,
         module_files: &'a mut M,
-        _options: &Wast2JsonOptions,
+        options: &'a Wast2JsonOptions,
     ) -> Self {
         let line_offsets = once(0)
             .chain(text.match_indices('\n').map(|(i, _)| i + 1))
@@ -128,7 +138,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
             module_basename,
             module_files,
             counter: 0,
-            registry: ModuleRegistry::new(),
+            registry: ModuleRegistry::new(options),
         }
     }
 
@@ -174,7 +184,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
 
         let cmd = match directive {
             WastDirective::Wat(wat) => {
-                let file = self.write_quote_module(wat)?;
+                let file = self.write_module(wat, true)?;
                 let name = file.name;
                 let filename = file.filename;
                 WastJsonCommand::Module {
@@ -218,7 +228,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
             WastDirective::AssertMalformed {
                 module, message, ..
             } => {
-                let file = self.write_quote_module(module)?;
+                let file = self.write_module(module, false)?;
                 WastJsonCommand::AssertMalformed {
                     line,
                     filename: file.filename.to_string(),
@@ -230,7 +240,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
             WastDirective::AssertInvalid {
                 module, message, ..
             } => {
-                let file = self.write_quote_module(module)?;
+                let file = self.write_module(module, false)?;
                 WastJsonCommand::AssertInvalid {
                     line,
                     filename: file.filename.to_string(),
@@ -244,7 +254,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
                 message,
                 ..
             } => {
-                let file = self.write_module(wat)?;
+                let file = self.write_wat(wat, false)?;
                 WastJsonCommand::AssertUninstantiable {
                     line,
                     filename: file.filename.to_string(),
@@ -256,7 +266,7 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
             WastDirective::AssertUnlinkable {
                 module, message, ..
             } => {
-                let file = self.write_module(module)?;
+                let file = self.write_wat(module, false)?;
                 WastJsonCommand::AssertUnlinkable {
                     line,
                     filename: file.filename.to_string(),
@@ -332,20 +342,22 @@ impl<'a, M: WriteModuleFile> Wast2JsonConverter<'a, M> {
         }
     }
 
-    fn write_quote_module(&mut self, module: &mut QuoteWat) -> Result<ModuleFile> {
+    fn write_module(&mut self, module: &mut QuoteWat, eval: bool) -> Result<ModuleFile> {
         match module {
             QuoteWat::QuoteModule(_, source) => self.write_quote(source),
             QuoteWat::QuoteComponent(..) => unsupported!("components"),
-            QuoteWat::Wat(wat) => self.write_module(wat),
+            QuoteWat::Wat(wat) => self.write_wat(wat, eval),
         }
     }
 
-    fn write_module(&mut self, module: &mut Wat) -> Result<ModuleFile> {
+    fn write_wat(&mut self, module: &mut Wat, eval: bool) -> Result<ModuleFile> {
         match module {
             Wat::Module(module) => {
                 let bytes = module.encode()?;
                 let name = module.id.map(|ref id| id_to_name(id));
-                self.registry.define(&module.id, &bytes)?;
+                if eval {
+                    self.registry.define(&module.id, &bytes)?;
+                }
                 self.write(ModuleType::Binary, name, bytes)
             }
             Wat::Component(..) => unsupported!("components"),

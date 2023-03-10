@@ -1,10 +1,14 @@
-use crate::error::{Error, ErrorKind, Result};
+use crate::{
+    error::{Error, ErrorKind, Result},
+    Wast2JsonOptions,
+};
 use std::{collections::HashMap, rc::Rc};
-use wasmparser::{ExternalKind, FuncType, Payload, ValType};
+use wasmparser::{ExternalKind, FuncType, Payload, ValType, Validator};
 use wast::token::Id;
 
 /// Module registry
-pub struct ModuleRegistry {
+pub struct ModuleRegistry<'a> {
+    options: &'a Wast2JsonOptions,
     named: HashMap<String, Rc<ModuleExports>>,
     most_recent: Option<Rc<ModuleExports>>,
 }
@@ -19,16 +23,17 @@ pub enum Export {
     Other,
 }
 
-impl ModuleRegistry {
-    pub fn new() -> Self {
+impl<'a> ModuleRegistry<'a> {
+    pub fn new(options: &'a Wast2JsonOptions) -> Self {
         Self {
+            options,
             named: HashMap::new(),
             most_recent: None,
         }
     }
 
     pub fn define(&mut self, name: &Option<Id>, bytes: &[u8]) -> Result<()> {
-        let exports = Rc::new(ModuleExports::parse(bytes)?);
+        let exports = Rc::new(ModuleExports::parse(bytes, self.options)?);
         if let Some(id) = name {
             self.named.insert(id.name().into(), exports.clone());
         }
@@ -48,14 +53,21 @@ impl ModuleRegistry {
 }
 
 impl ModuleExports {
-    pub fn parse(bytes: &[u8]) -> Result<ModuleExports> {
+    pub fn parse(bytes: &[u8], options: &Wast2JsonOptions) -> Result<ModuleExports> {
         let mut types: Vec<Export> = Vec::new();
         let mut funcs: Vec<u32> = Vec::new();
         let mut globals: Vec<ValType> = Vec::new();
         let mut exports: HashMap<String, Export> = HashMap::new();
+        let mut validator = options
+            .validate
+            .then(|| Validator::new_with_features(options.features));
 
         for item in wasmparser::Parser::new(0).parse_all(bytes) {
-            match item? {
+            let payload = item?;
+            if let Some(ref mut validator) = validator {
+                validator.payload(&payload)?;
+            }
+            match payload {
                 Payload::TypeSection(s) => {
                     types.reserve(s.count() as usize);
                     for ty in s.into_iter_err_on_gc_types() {
