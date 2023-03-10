@@ -8,7 +8,7 @@
 //! _not_ currently reused!
 
 use serde::Serialize;
-use serde_json::ser::Formatter;
+use serde_json::ser::{CharEscape, CompactFormatter, Formatter};
 use std::{borrow::Cow, fmt, io};
 use wast::core::NanPattern;
 use wast::token::{Float32, Float64};
@@ -520,6 +520,24 @@ impl Formatter for WabtFormatter {
         W: ?Sized + io::Write,
     {
         writer.write_all(b": ")
+    }
+
+    fn write_char_escape<W>(&mut self, writer: &mut W, char_escape: CharEscape) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        use CharEscape::*;
+        let char_escape = match char_escape {
+            Quote => AsciiControl(b'"'),
+            ReverseSolidus => AsciiControl(b'\\'),
+            Backspace => AsciiControl(b'\x08'),
+            FormFeed => AsciiControl(b'\x0c'),
+            LineFeed => AsciiControl(b'\n'),
+            CarriageReturn => AsciiControl(b'\r'),
+            Tab => AsciiControl(b'\t'),
+            _ => char_escape,
+        };
+        CompactFormatter.write_char_escape(writer, char_escape)
     }
 }
 
