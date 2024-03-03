@@ -1,0 +1,15 @@
+;;; TOOL: wast2json
+(assert_invalid (module binary "\00ASM") "bad magic")
+(module)
+(;; OUTPUT assertinvalid-binary-module.json ;;;
+{"source_filename": "tests/local/parse/assert/assertinvalid-binary-module.txt",
+ "commands": [
+  {"type": "assert_invalid", "line": 2, "filename": "assertinvalid-binary-module.0.wasm", "text": "bad magic", "module_type": "binary"},
+  {"type": "module", "line": 3, "filename": "assertinvalid-binary-module.1.wasm"}]}
+;;; OUTPUT assertinvalid-binary-module.json ;;)
+(;; BINARY assertinvalid-binary-module.0.wasm ;;;
+"\00ASM"
+;;; BINARY assertinvalid-binary-module.0.wasm ;;)
+(;; DUMP assertinvalid-binary-module.1.wasm ;;;
+(module)
+;;; DUMP assertinvalid-binary-module.1.wasm ;;)

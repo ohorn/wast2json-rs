@@ -1,0 +1,10 @@
+;;; TOOL: wast2json
+;;; ERROR: 1
+;; syntax is (input name? text)
+(input "hello")
+(input $var "hello")
+(;; STDERR ;;;
+tests/local/parse/bad-input-command.txt:4:2: error: expected valid module field
+(input "hello")
+ ^
+;;; STDERR ;;)

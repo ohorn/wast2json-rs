@@ -1,0 +1,23 @@
+;;; TOOL: wast2json
+(module
+  (export "f" (func 0))
+  (func (result i32)
+     i32.const 0
+     return))
+(assert_return (invoke "f") (i32.const 0))
+(;; OUTPUT assert-after-module.json ;;;
+{"source_filename": "tests/local/parse/assert/assert-after-module.txt",
+ "commands": [
+  {"type": "module", "line": 2, "filename": "assert-after-module.0.wasm"},
+  {"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}, "expected": [{"type": "i32", "value": "0"}]}]}
+;;; OUTPUT assert-after-module.json ;;)
+(;; DUMP assert-after-module.0.wasm ;;;
+(module
+  (type (;0;) (func (result i32)))
+  (func (;0;) (type 0) (result i32)
+    i32.const 0
+    return
+  )
+  (export "f" (func 0))
+)
+;;; DUMP assert-after-module.0.wasm ;;)

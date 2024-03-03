@@ -1,0 +1,30 @@
+;;; TOOL: wast2json
+(module
+  (export "test" (func $test))
+  (func $test (param i32) (result i32)
+    local.get 0
+    i32.const 100
+    i32.add))
+
+(invoke "test" (i32.const 1))
+(invoke "test" (i32.const 100))
+(invoke "test" (i32.const -30))
+(;; OUTPUT invoke.json ;;;
+{"source_filename": "tests/local/parse/assert/invoke.txt",
+ "commands": [
+  {"type": "module", "line": 2, "filename": "invoke.0.wasm"},
+  {"type": "action", "line": 9, "action": {"type": "invoke", "field": "test", "args": [{"type": "i32", "value": "1"}]}, "expected": [{"type": "i32"}]},
+  {"type": "action", "line": 10, "action": {"type": "invoke", "field": "test", "args": [{"type": "i32", "value": "100"}]}, "expected": [{"type": "i32"}]},
+  {"type": "action", "line": 11, "action": {"type": "invoke", "field": "test", "args": [{"type": "i32", "value": "4294967266"}]}, "expected": [{"type": "i32"}]}]}
+;;; OUTPUT invoke.json ;;)
+(;; DUMP invoke.0.wasm ;;;
+(module
+  (type (;0;) (func (param i32) (result i32)))
+  (func $test (;0;) (type 0) (param i32) (result i32)
+    local.get 0
+    i32.const 100
+    i32.add
+  )
+  (export "test" (func $test))
+)
+;;; DUMP invoke.0.wasm ;;)

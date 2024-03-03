@@ -1,0 +1,13 @@
+;;; TOOL: wast2json
+(assert_malformed
+  (module binary
+    "\00asm\bc\0a\00\00")
+  "unknown binary version")
+(;; OUTPUT assertmalformed.json ;;;
+{"source_filename": "tests/local/parse/assert/assertmalformed.txt",
+ "commands": [
+  {"type": "assert_malformed", "line": 2, "filename": "assertmalformed.0.wasm", "text": "unknown binary version", "module_type": "binary"}]}
+;;; OUTPUT assertmalformed.json ;;)
+(;; BINARY assertmalformed.0.wasm ;;;
+"\00asm\bc\0a\00\00"
+;;; BINARY assertmalformed.0.wasm ;;)

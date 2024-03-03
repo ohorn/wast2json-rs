@@ -1,0 +1,26 @@
+;;; TOOL: wast2json
+(module
+  (func $foo (param f32) (result f32)
+    local.get 0
+    f32.const 0
+    f32.div)
+  (export "foo" (func $foo)))
+
+(assert_return (invoke "foo" (f32.const 0)) (f32.const nan:canonical))
+(;; OUTPUT assertreturn-canonical-nan.json ;;;
+{"source_filename": "tests/local/parse/assert/assertreturn-canonical-nan.txt",
+ "commands": [
+  {"type": "module", "line": 2, "filename": "assertreturn-canonical-nan.0.wasm"},
+  {"type": "assert_return", "line": 9, "action": {"type": "invoke", "field": "foo", "args": [{"type": "f32", "value": "0"}]}, "expected": [{"type": "f32", "value": "nan:canonical"}]}]}
+;;; OUTPUT assertreturn-canonical-nan.json ;;)
+(;; DUMP assertreturn-canonical-nan.0.wasm ;;;
+(module
+  (type (;0;) (func (param f32) (result f32)))
+  (func $foo (;0;) (type 0) (param f32) (result f32)
+    local.get 0
+    f32.const 0x0p+0 (;=0;)
+    f32.div
+  )
+  (export "foo" (func $foo))
+)
+;;; DUMP assertreturn-canonical-nan.0.wasm ;;)

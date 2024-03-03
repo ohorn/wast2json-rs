@@ -1,7 +1,37 @@
 [package]
 name = "wast2json"
-version = "0.0.0"
+version = "0.1.0"
+authors = ["Oliver Horn <oliver.horn@gmx.net>"]
 edition = "2021"
 description = "A wast2json implementation written in Rust"
+readme = "README.md"
+homepage = "https://github.com/ohorn/wast2json-rs"
 repository = "https://github.com/ohorn/wast2json-rs"
 license = "Apache-2.0"
+keywords = ["WebAssembly", "wasm", "wast"]
+categories = ["wasm"]
+
+[[bin]]
+name = "wast2json-rs"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+strip = true
+
+[dependencies]
+clap = { version = "4.5.1", features = ["derive"] }
+clap-verbosity-flag = "2.2.0"
+env_logger = "0.11.2"
+log = "0.4.21"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = { version = "1.0.114", features = ["preserve_order"] }
+thiserror = "1.0.57"
+wasmparser = "0.201.0"
+wast = "201.0.0"
+wat = "1.201.0"
+
+[dev-dependencies]
+assert-json-diff = "2.0.2"
+wasmprinter = "0.201.0"
+tempfile = "3.10.1"

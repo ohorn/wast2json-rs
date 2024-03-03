@@ -1,0 +1,30 @@
+;;; TOOL: wast2json
+(module
+  (func $foo (result i32) i32.const 0)
+  (export "foo" (func $foo))
+  (func $bar (param f32) (result f32)
+    local.get 0)
+  (export "bar" (func $bar)))
+
+(assert_return (invoke "foo") (i32.const 0))
+(assert_return (invoke "bar" (f32.const 0)) (f32.const 0))
+--- output: assertreturn.json
+{"source_filename": "tests/local/parse/assert/assertreturn.txt",
+ "commands": [
+  {"type": "module", "line": 2, "filename": "assertreturn.0.wasm"},
+  {"type": "assert_return", "line": 9, "action": {"type": "invoke", "field": "foo", "args": []}, "expected": [{"type": "i32", "value": "0"}]},
+  {"type": "assert_return", "line": 10, "action": {"type": "invoke", "field": "bar", "args": [{"type": "f32", "value": "0"}]}, "expected": [{"type": "f32", "value": "0"}]}]}
+--- dump: assertreturn.0.wasm
+(module
+  (type (;0;) (func (result i32)))
+  (type (;1;) (func (param f32) (result f32)))
+  (func $foo (;0;) (type 0) (result i32)
+    i32.const 0
+  )
+  (func $bar (;1;) (type 1) (param f32) (result f32)
+    local.get 0
+  )
+  (export "foo" (func $foo))
+  (export "bar" (func $bar))
+)
+---

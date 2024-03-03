@@ -1,0 +1,21 @@
+;;; TOOL: wast2json
+(assert_invalid
+  (module
+    (func
+      i32.const 1
+      drop)
+    (export "foo" (func 1)))
+  "unknown function 1") ;; string is ignored
+(assert_invalid
+  (module
+    (func (result i32)
+      nop))
+  "type mismatch")
+(;; OUTPUT assertinvalid.json ;;;
+{"source_filename": "tests/local/parse/assert/assertinvalid.txt",
+ "commands": [
+  {"type": "assert_invalid", "line": 2, "filename": "assertinvalid.0.wasm", "text": "unknown function 1", "module_type": "binary"},
+  {"type": "assert_invalid", "line": 9, "filename": "assertinvalid.1.wasm", "text": "type mismatch", "module_type": "binary"}]}
+;;; OUTPUT assertinvalid.json ;;)
+;;; IGNORE assertinvalid.0.wasm
+;;; IGNORE assertinvalid.1.wasm
